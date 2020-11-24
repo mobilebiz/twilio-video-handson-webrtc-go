@@ -5,8 +5,7 @@ exports.handler = function(context, event, callback) {
     if (ROOM_NAME === '') callback(new Error('roomName parameter was not set.'))
 
     // 環境変数から各種情報をセット
-    const ACCOUNT_SID = context.ACCOUNT_SID;
-    // const ACCOUNT_SID = context.MAIN_ACCOUNT_SID;    // ローカル実行用
+    const ACCOUNT_SID = context.MAIN_ACCOUNT_SID;
     const API_KEY = context.TWILIO_VIDEO_KEY;
     const API_SECRET = context.TWILIO_VIDEO_SECRET;
 

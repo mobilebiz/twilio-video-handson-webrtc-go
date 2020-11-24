@@ -1,10 +1,10 @@
 {
 	"projects": {
-		"ACc678d7247eb751c20f5a13861085f3b4": {
-			"serviceSid": "ZS27fd8ea95dd1840a123f88dac262cbdf",
-			"latestBuild": "ZB5160bf19c0acb3b27bd2fc8182a04943"
+		"ACb7d1f78e4b4e6752ebefb9bef0fc78a4": {
+			"serviceSid": "ZS2ebc65b7ef0ef907ecd7f17e10ebc3f0",
+			"latestBuild": "ZB0e4546340bb2f430cc51eede2a1fcac7"
 		}
 	},
-	"serviceSid": "ZS27fd8ea95dd1840a123f88dac262cbdf",
-	"latestBuild": "ZB5160bf19c0acb3b27bd2fc8182a04943"
+	"serviceSid": "ZS2ebc65b7ef0ef907ecd7f17e10ebc3f0",
+	"latestBuild": "ZB0e4546340bb2f430cc51eede2a1fcac7"
 }
