@@ -1,0 +1,22 @@
+/* rootクラス */
+:root {
+    --video-width: 640px;   /* デフォルトの横幅 */
+}
+
+/* コントロールエリアのスタイル */
+#room-controls {
+    padding: 10px;
+}
+
+/* 映像表示エリアを横並びにする */
+#video-zone {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* 映像スタイル */
+.video-style {
+    width: var(--video-width);
+    height: var(--video-width) * ( 3 / 4 ); /* 4:3で表示 */
+    object-fit: cover;
+}

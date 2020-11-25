@@ -14,6 +14,7 @@
     .then(stream => {
         document.getElementById("myStream").srcObject = stream;
         // STEP 1. 自身の映像にCSSを適用
+        document.getElementById("myStream").classList.add("video-style");
         // STEP 1. End
         localStream = stream;
     });
@@ -23,6 +24,8 @@
     const btnLeaveRoom = document.getElementById("button-leave");
 
     // STEP 3. ボタンにCSSを適用する
+    btnJoinRoom.classList.add("uk-button", "uk-button-primary");
+    btnLeaveRoom.classList.add("uk-button", "uk-button-danger");
     // STEP 3. End
 
     // 入室ボタンが押されたときの処理
@@ -119,6 +122,9 @@
         // トラックをアタッチする
         const child = div.appendChild(track.attach());
         // STEP 2. 映像トラックにCSSを設定
+        if (track.kind === 'video') {
+            child.classList.add("video-style");
+        };
         // STEP 2. End
     }
 
@@ -131,6 +137,25 @@
     // 映像のサイズを調整する
     const resizeVideo = () => {
         // STEP 4. サイズの計算と適用
+        const root = document.documentElement;
+        if (!maxWidth && participantCount === 2) {
+            // 最初の参加者が入ってきたときに、CSSの:rootに設定されている値を取得
+            maxWidth = Number(getComputedStyle(root).getPropertyValue('--video-width').replace('px', ''));
+            // 最小幅は、最大幅の半分とする
+            minWidth = maxWidth / 2;
+        }
+        // 新しい幅を計算してみる
+        const newWidth = maxWidth * 2 / participantCount;
+        if (newWidth < minWidth) {
+            // 最小幅より小さくなった場合は、最小幅を指定
+            root.style.setProperty('--video-width', `${minWidth}px`);
+        } else if (newWidth > maxWidth) {
+            // 最大幅より大きくなった場合は、最大幅を指定
+            root.style.setProperty('--video-width', `${maxWidth}px`);
+        } else {
+            // 計算した値を採用
+            root.style.setProperty('--video-width', `${newWidth}px`);
+        }
         // STEP 4. End
     }
 
