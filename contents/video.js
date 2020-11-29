@@ -147,7 +147,7 @@
             }
             publication.on('subscribed', track => handleTrackChanged(track, participant));
             // STEP 4. End
-            });
+        });
         
         // 参加者のトラックが届いたとき
         participant.on('trackSubscribed', track => trackSubscribed(div, track));
