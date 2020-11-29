@@ -1,8 +1,6 @@
 /* rootクラス */
 :root {
     --video-width: 640px;   /* デフォルトの横幅 */
-    --camera-icon: url('./images/camera_on.png');  /* カメラアイコン */
-    --mic-icon: url('./images/mic_on.png');  /* マイクアイコン */
 }
 
 /* コントロールエリアのスタイル */
