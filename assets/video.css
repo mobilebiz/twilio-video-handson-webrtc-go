@@ -1,6 +1,8 @@
 /* rootクラス */
 :root {
     --video-width: 640px;   /* デフォルトの横幅 */
+    --camera-icon: url('./images/camera_on.png');  /* カメラアイコン */
+    --mic-icon: url('./images/mic_on.png');  /* マイクアイコン */
 }
 
 /* コントロールエリアのスタイル */
@@ -33,4 +35,60 @@
     position: relative;
     float: left;
     background-color:#000;
+}
+
+/* カメラボタン */
+.toggle-camera {
+    position: absolute;
+    bottom: 10px;
+    left: 8px;
+    border: 0;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0);
+}
+
+.camera-image {
+    background-image: var(--camera-icon);
+    background-size: cover;
+    display: inline-block;
+    margin: 0;
+    width: 30px;
+    height: 30px;
+    z-index: 10;
+}
+
+/* マイクボタン */
+.toggle-mic {
+    position: absolute;
+    bottom: 10px;
+    left: 45px;
+    border: 0;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0);
+}
+
+.mic-image {
+    background-image: var(--mic-icon);
+    background-size: cover;
+    display: inline-block;
+    margin: 0;
+    width: 30px;
+    height: 30px;
+    z-index: 10;
+}
+
+/* リモートマイク*/
+.remote-mic {
+    position: absolute;
+    bottom: 10px;
+    left: 8px;
+    border: 0;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0);
 }

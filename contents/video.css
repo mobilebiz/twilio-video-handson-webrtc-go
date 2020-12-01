@@ -92,3 +92,9 @@
     height: 30px;
     background: rgba(0, 0, 0, 0);
 }
+
+/* ドミナントスピーカー */
+.dominant-speaker {
+    outline: solid 5px #f0506e;
+    outline-offset: -5px;
+}

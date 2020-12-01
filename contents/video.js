@@ -19,6 +19,18 @@
         document.getElementById("myStream").srcObject = stream;
         // 自身の映像にCSSを適用
         document.getElementById("myStream").classList.add("video-style");
+
+        // STEP 4. 自身のマイクから発話状態を検知する
+        const audioContext = new AudioContext();
+        const analyser = audioContext.createAnalyser();
+        const timeDomain = new Float32Array(analyser.frequencyBinCount);
+        const frequency = new Uint8Array(analyser.frequencyBinCount);
+        audioContext.createMediaStreamSource(stream).connect(analyser);
+
+        // 検出ループに入る
+        detectOwnSpeak(analyser, timeDomain, frequency);
+        // STEP 4. End
+
         localStream = stream;
     });
     
@@ -51,7 +63,7 @@
         btnLeaveRoom.disabled = true;
     });
 
-    // STEP 1. カメラ・マイクのON/OFFボタンを表示
+    // カメラ・マイクのON/OFFボタンを表示
     const root = document.documentElement;
     // カメラボタン
     const toggle_camera = document.createElement("button");
@@ -94,22 +106,25 @@
         // ボタンのアイコンを切り替え
         root.style.setProperty('--mic-icon', `url('./images/mic_${audioOn ? 'on' : 'off'}.png')`);
     });
-    // STEP 1. End
 
     // ルームに接続
     const connectRoom = (token) => {
         // 部屋に入室
-        Video.connect(token, { name: ROOM_NAME })
+        Video.connect(token, { 
+            name: ROOM_NAME,
+            // STEP 1. ドミナントスピーカーを有効にする
+            dominantSpeaker: true, 
+            // STEP 1. End
+        })
         .then(room => {
             console.log(`Connected to Room ${room.name}`);
             videoRoom = room;
 
-            // STEP 2. 入室時のローカルデバイスON/OFF制御
+            // 入室時のローカルデバイスON/OFF制御
             room.localParticipant.videoTracks.forEach(videoTrack => 
                 videoOn ? videoTrack.track.enable() : videoTrack.track.disable());  
             room.localParticipant.audioTracks.forEach(audioTrack => 
                 audioOn ? audioTrack.track.enable() : audioTrack.track.disable());  
-            // STEP 2. End
 
             // すでに入室している参加者を表示
             room.participants.forEach(participantConnected);
@@ -122,6 +137,10 @@
 
             // 自分が退室したときの処理
             room.once('disconnected', error => room.participants.forEach(participantDisconnected));
+
+            // STEP 3. ドミナントスピーカーを検出したときの処理
+            room.on('dominantSpeakerChanged', participant => dominantSpeaker(participant));
+            // STEP 3. End
         
             btnJoinRoom.disabled = true;
             btnLeaveRoom.disabled = false;
@@ -140,13 +159,12 @@
         
         // 参加者のトラック（映像、音声など）を処理
         participant.tracks.forEach(publication => {
-            // STEP 4. トラックの状態を監視する
+            // トラックの状態を監視する
             if (publication.isSubscribed) {
                 trackSubscribed(div, publication.track);
                 handleTrackChanged(publication.track, participant);
             }
             publication.on('subscribed', track => handleTrackChanged(track, participant));
-            // STEP 4. End
         });
         
         // 参加者のトラックが届いたとき
@@ -216,9 +234,22 @@
         }
     }
 
-    // STEP 3. リモート側のカメラ・マイクが切り替わったときの処理
+    // リモート側のカメラ・マイクが切り替わったときの処理
     const handleTrackChanged = ((track, participant) => {
         const dom = document.getElementById(participant.sid);
+
+        // ミュートアイコンを表示
+        const muteIcon = (dom => {
+            const remote_mic = document.createElement('div');
+            remote_mic.id = 'remote-mic';
+            remote_mic.classList.add('remote-mic');
+            const mic = document.createElement('sp');
+            mic.classList.add('mic-image');
+            mic.style.backgroundImage = "url('./images/mic_off.png')";
+            remote_mic.append(mic);
+            dom.append(remote_mic);
+        });
+
         if (track.kind === 'audio' && !track.isEnabled) {
             // 参加中のメンバーがすでにマイクをOFFにしているのでミュートアイコンを表示
             muteIcon(dom);
@@ -240,18 +271,50 @@
             }
         });
 
-        // ミュートアイコンを表示
-        const muteIcon = (dom => {
-            const remote_mic = document.createElement('div');
-            remote_mic.id = 'remote-mic';
-            remote_mic.classList.add('remote-mic');
-            const mic = document.createElement('sp');
-            mic.classList.add('mic-image');
-            mic.style.backgroundImage = "url('./images/mic_off.png')";
-            remote_mic.append(mic);
-            dom.append(remote_mic);
+    });
+
+    // STEP 2. ドミナントスピーカーを目立たせる
+    const dominantSpeaker = (participant => {
+        if (!participant) return;
+        console.log(`Dominant speaker changed.　${participant.sid}`);
+        // 映像を表示するエリアからDIVタグを検索
+        const videoZone = document.getElementById('video-zone');
+        videoZone.childNodes.forEach(divNode => {
+            if (divNode.nodeName === 'DIV') {
+                // さらにその下のVIDEOタグを検索
+                divNode.childNodes.forEach(node => {
+                    if (node.nodeName === 'VIDEO') {
+                        if (node.parentElement.id === participant.sid) {
+                            // ドミナントスピーカーなので、スタイルを適用
+                            node.classList.add('dominant-speaker');
+                        } else {
+                            // ドミナントスピーカーではないので、スタイルを削除
+                            node.classList.remove('dominant-speaker');
+                        }
+                    }        
+                });
+            }
         });
     });
-    // STEP 3. End
+    // STEP 2. End
 
+    // STEP 5. 検出ループ
+    const detectOwnSpeak = ((analyser, timeDomain, frequency) => {
+        setTimeout(() => {
+            // 音量の平均スコアを計算する
+            analyser.getFloatTimeDomainData(timeDomain);
+            analyser.getByteFrequencyData(frequency);
+            let score = frequency.reduce((p, x) => p + x, 0) / frequency.length;
+
+            // スコアが10を超えたらなにか話していると判断して、スタイルを適用させる
+            if (score > 10 && videoRoom && audioOn) dominantSpeaker({ sid: 'my-video'});
+
+            // スコアが10以下の場合は、自身のスタイルを削除
+            if (score <= 10) document.getElementById('myStream').classList.remove('dominant-speaker');
+
+            // ループ
+            detectOwnSpeak(analyser, timeDomain, frequency);
+        }, 100);
+    });
+    // STEP 5. End
 })();

@@ -19,6 +19,10 @@
         document.getElementById("myStream").srcObject = stream;
         // 自身の映像にCSSを適用
         document.getElementById("myStream").classList.add("video-style");
+
+        // STEP 4. 自身のマイクから発話状態を検知する
+        // STEP 4. End
+
         localStream = stream;
     });
     
@@ -51,19 +55,67 @@
         btnLeaveRoom.disabled = true;
     });
 
-    // STEP 1. カメラ・マイクのON/OFFボタンを表示
-    // STEP 1. End
+    // カメラ・マイクのON/OFFボタンを表示
+    const root = document.documentElement;
+    // カメラボタン
+    const toggle_camera = document.createElement("button");
+    toggle_camera.id = "btn-toggle-camera";
+    toggle_camera.classList.add("toggle-camera");
+    const toggle_camera_image = document.createElement("span");
+    toggle_camera_image.classList.add("camera-image");
+    toggle_camera.append(toggle_camera_image);
+    document.getElementById('my-video').append(toggle_camera);
+
+    // カメラボタンが押されたときの処理
+    toggle_camera.addEventListener('click', () => {
+        if (videoRoom) {    // ルームに接続済みの場合のみ
+            videoRoom.localParticipant.videoTracks.forEach(videoTrack => 
+                videoOn ? videoTrack.track.disable() : videoTrack.track.enable());  
+        }
+        // フラグを反転
+        videoOn = !videoOn;
+        // ボタンのアイコンを切り替え
+        root.style.setProperty('--camera-icon', `url('./images/camera_${videoOn ? 'on' : 'off'}.png')`);
+    });
+
+    // マイクボタン
+    const toggle_mic = document.createElement("button");
+    toggle_mic.id = "btn-toggle-mic";
+    toggle_mic.classList.add("toggle-mic");
+    const toggle_mic_image = document.createElement("span");
+    toggle_mic_image.classList.add("mic-image");
+    toggle_mic.append(toggle_mic_image);
+    document.getElementById('my-video').append(toggle_mic);
+
+    // マイクボタンが押されたときの処理
+    toggle_mic.addEventListener('click', () => {
+        if (videoRoom) {    // ルームに接続済みの場合のみ
+            videoRoom.localParticipant.audioTracks.forEach(audioTrack => 
+                audioOn ? audioTrack.track.disable() : audioTrack.track.enable());  
+        }
+        // フラグを反転
+        audioOn = !audioOn;
+        // ボタンのアイコンを切り替え
+        root.style.setProperty('--mic-icon', `url('./images/mic_${audioOn ? 'on' : 'off'}.png')`);
+    });
 
     // ルームに接続
     const connectRoom = (token) => {
         // 部屋に入室
-        Video.connect(token, { name: ROOM_NAME })
+        Video.connect(token, { 
+            name: ROOM_NAME,
+            // STEP 1. ドミナントスピーカーを有効にする
+            // STEP 1. End
+        })
         .then(room => {
             console.log(`Connected to Room ${room.name}`);
             videoRoom = room;
 
-            // STEP 2. 入室時のローカルデバイスON/OFF制御
-            // STEP 2. End
+            // 入室時のローカルデバイスON/OFF制御
+            room.localParticipant.videoTracks.forEach(videoTrack => 
+                videoOn ? videoTrack.track.enable() : videoTrack.track.disable());  
+            room.localParticipant.audioTracks.forEach(audioTrack => 
+                audioOn ? audioTrack.track.enable() : audioTrack.track.disable());  
 
             // すでに入室している参加者を表示
             room.participants.forEach(participantConnected);
@@ -76,6 +128,9 @@
 
             // 自分が退室したときの処理
             room.once('disconnected', error => room.participants.forEach(participantDisconnected));
+
+            // STEP 3. ドミナントスピーカーを検出したときの処理
+            // STEP 3. End
         
             btnJoinRoom.disabled = true;
             btnLeaveRoom.disabled = false;
@@ -94,12 +149,13 @@
         
         // 参加者のトラック（映像、音声など）を処理
         participant.tracks.forEach(publication => {
-            // STEP 4. トラックの状態を監視する
+            // トラックの状態を監視する
             if (publication.isSubscribed) {
                 trackSubscribed(div, publication.track);
+                handleTrackChanged(publication.track, participant);
             }
-            // STEP 4. End
-            });
+            publication.on('subscribed', track => handleTrackChanged(track, participant));
+        });
         
         // 参加者のトラックが届いたとき
         participant.on('trackSubscribed', track => trackSubscribed(div, track));
@@ -168,7 +224,48 @@
         }
     }
 
-    // STEP 3. リモート側のカメラ・マイクが切り替わったときの処理
-    // STEP 3. End
+    // リモート側のカメラ・マイクが切り替わったときの処理
+    const handleTrackChanged = ((track, participant) => {
+        const dom = document.getElementById(participant.sid);
 
+        // ミュートアイコンを表示
+        const muteIcon = (dom => {
+            const remote_mic = document.createElement('div');
+            remote_mic.id = 'remote-mic';
+            remote_mic.classList.add('remote-mic');
+            const mic = document.createElement('sp');
+            mic.classList.add('mic-image');
+            mic.style.backgroundImage = "url('./images/mic_off.png')";
+            remote_mic.append(mic);
+            dom.append(remote_mic);
+        });
+
+        if (track.kind === 'audio' && !track.isEnabled) {
+            // 参加中のメンバーがすでにマイクをOFFにしているのでミュートアイコンを表示
+            muteIcon(dom);
+        }
+        // 参加中のメンバーがマイクをOFFにしたときの処理
+        track.on('disabled', () => {
+            if (track.kind === 'audio') {
+                // ミュートアイコンを表示
+                muteIcon(dom);
+            }
+        });
+        // 参加中のメンバーがマイクをONにしたときの処理
+        track.on('enabled', () => {
+            if (track.kind === 'audio') {
+                // ミュートアイコンを削除
+                dom.childNodes.forEach(node => {
+                    if (node.id === 'remote-mic') node.remove();
+                });
+            }
+        });
+
+    });
+
+    // STEP 2. ドミナントスピーカーを目立たせる
+    // STEP 2. End
+
+    // STEP 5. 検出ループ
+    // STEP 5. End
 })();
