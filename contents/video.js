@@ -219,6 +219,19 @@
     // STEP 3. リモート側のカメラ・マイクが切り替わったときの処理
     const handleTrackChanged = ((track, participant) => {
         const dom = document.getElementById(participant.sid);
+
+        // ミュートアイコンを表示
+        const muteIcon = (dom => {
+            const remote_mic = document.createElement('div');
+            remote_mic.id = 'remote-mic';
+            remote_mic.classList.add('remote-mic');
+            const mic = document.createElement('sp');
+            mic.classList.add('mic-image');
+            mic.style.backgroundImage = "url('./images/mic_off.png')";
+            remote_mic.append(mic);
+            dom.append(remote_mic);
+        });
+
         if (track.kind === 'audio' && !track.isEnabled) {
             // 参加中のメンバーがすでにマイクをOFFにしているのでミュートアイコンを表示
             muteIcon(dom);
@@ -238,18 +251,6 @@
                     if (node.id === 'remote-mic') node.remove();
                 });
             }
-        });
-
-        // ミュートアイコンを表示
-        const muteIcon = (dom => {
-            const remote_mic = document.createElement('div');
-            remote_mic.id = 'remote-mic';
-            remote_mic.classList.add('remote-mic');
-            const mic = document.createElement('sp');
-            mic.classList.add('mic-image');
-            mic.style.backgroundImage = "url('./images/mic_off.png')";
-            remote_mic.append(mic);
-            dom.append(remote_mic);
         });
     });
     // STEP 3. End
