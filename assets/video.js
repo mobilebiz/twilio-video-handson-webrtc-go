@@ -1,18 +1,42 @@
-(() => {
+(async () => {
   'use strict';
 
   const TWILIO_DOMAIN = location.host; // 現在のURL
   const ROOM_NAME = 'VideoRoom'; // 部屋の名前
   const Video = Twilio.Video; // Twilio Video JS SDK
-  let videoRoom, localStream;
+  const VideoProcessors = Twilio.VideoProcessors; // Twilio Video Processors
+  const BACKGROUND_IMAGE = './images/background.jpeg'; // 背景画像
+  let videoRoom;
+  let localTracks, virtualBackground;
+  const img = new Image();
 
   // プレビュー画面の表示
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      document.getElementById('myStream').srcObject = stream;
-      localStream = stream;
+  localTracks = await Video.createLocalTracks();
+  const localVideo = document.getElementById('myStream');
+  localTracks.forEach((track) => {
+    if (track.kind === 'video' || track.kind === 'audio') {
+      track.attach(localVideo);
+    }
+  });
+
+  // バーチャル背景を設定
+  img.onload = () => {
+    virtualBackground = new VideoProcessors.VirtualBackgroundProcessor({
+      assetsPath: `${document.location.protocol}//${TWILIO_DOMAIN}/twilio-video-processors-assets/`,
+      backgroundImage: img,
     });
+    virtualBackground.loadModel().then(async () => {
+      if (localTracks) {
+        const videoTrack = localTracks.filter(
+          (track) => track.kind === 'video',
+        );
+        if (!videoTrack[0].processor) {
+          videoTrack[0].addProcessor(virtualBackground);
+        }
+      }
+    });
+  };
+  img.src = BACKGROUND_IMAGE;
 
   // ボタンの準備
   const btnJoinRoom = document.getElementById('button-join');
@@ -45,7 +69,7 @@
   // ルームに接続
   const connectRoom = (token) => {
     // 部屋に入室
-    Video.connect(token, { name: ROOM_NAME, tracks: localStream.getTracks() })
+    Video.connect(token, { name: ROOM_NAME, tracks: localTracks })
       .then((room) => {
         console.log(`Connected to Room ${room.name}`);
         videoRoom = room;
