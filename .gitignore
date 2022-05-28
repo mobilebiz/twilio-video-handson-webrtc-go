@@ -114,5 +114,6 @@ dist
 .yarn/build-state.yml
 .pnp.*
 
-# .twilio-functions
+# .twilio
 .twilio-functions
+.twiliodeployinfo
