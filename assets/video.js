@@ -1,18 +1,19 @@
-(() => {
+(async () => {
   'use strict';
 
   const TWILIO_DOMAIN = location.host; // 現在のURL
   const ROOM_NAME = 'VideoRoom'; // 部屋の名前
   const Video = Twilio.Video; // Twilio Video JS SDK
-  let videoRoom, localStream;
+  let videoRoom, localTracks;
 
   // STEP 1. プレビュー画面の表示
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      document.getElementById('myStream').srcObject = stream;
-      localStream = stream;
-    });
+  localTracks = await Video.createLocalTracks();
+  const localVideo = document.getElementById('myStream');
+  localTracks.forEach((track) => {
+    if (track.kind === 'video' || track.kind === 'audio') {
+      track.attach(localVideo);
+    }
+  });
   // STEP 1. End
 
   // ボタンの準備
@@ -48,7 +49,7 @@
   // ルームに接続
   const connectRoom = (token) => {
     // STEP 3. 部屋に入室
-    Video.connect(token, { name: ROOM_NAME, tracks: localStream.getTracks() })
+    Video.connect(token, { name: ROOM_NAME, tracks: localTracks })
       .then((room) => {
         console.log(`Connected to Room ${room.name}`);
         videoRoom = room;
